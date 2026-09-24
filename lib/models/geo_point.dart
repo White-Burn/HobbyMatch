@@ -8,8 +8,8 @@ class GeoPoint {
 
   LatLng get latLng => LatLng(latitude, longitude);
 
-  static const santiagoCenter = GeoPoint(
-    latitude: -33.4489,
-    longitude: -70.6693,
+  static const vinaDelMarCenter = GeoPoint(
+    latitude: -33.0153,
+    longitude: -71.5500,
   );
 }

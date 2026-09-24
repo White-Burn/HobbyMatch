@@ -18,7 +18,7 @@ class LocationProvider extends ChangeNotifier {
   final LocationService _locationService;
 
   LocationStatus _status = LocationStatus.loading;
-  GeoPoint _position = GeoPoint.santiagoCenter;
+  GeoPoint _position = GeoPoint.vinaDelMarCenter;
   String? _errorMessage;
 
   LocationStatus get status => _status;
@@ -33,9 +33,9 @@ class LocationProvider extends ChangeNotifier {
       case LocationStatus.granted:
         return 'GPS activo';
       case LocationStatus.denied:
-        return 'Sin permiso GPS · usando Santiago';
+        return 'Sin permiso GPS · usando Viña del Mar';
       case LocationStatus.serviceDisabled:
-        return 'GPS desactivado · usando Santiago';
+        return 'GPS desactivado · usando Viña del Mar';
     }
   }
 
@@ -50,7 +50,7 @@ class LocationProvider extends ChangeNotifier {
       final serviceEnabled = await _locationService.isServiceEnabled();
       if (!serviceEnabled) {
         _status = LocationStatus.serviceDisabled;
-        _position = GeoPoint.santiagoCenter;
+        _position = GeoPoint.vinaDelMarCenter;
         notifyListeners();
         return;
       }
@@ -63,7 +63,7 @@ class LocationProvider extends ChangeNotifier {
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         _status = LocationStatus.denied;
-        _position = GeoPoint.santiagoCenter;
+        _position = GeoPoint.vinaDelMarCenter;
         notifyListeners();
         return;
       }
@@ -74,12 +74,12 @@ class LocationProvider extends ChangeNotifier {
         _status = LocationStatus.granted;
       } else {
         _status = LocationStatus.denied;
-        _position = GeoPoint.santiagoCenter;
+        _position = GeoPoint.vinaDelMarCenter;
       }
     } catch (e) {
       _status = LocationStatus.denied;
       _errorMessage = e.toString();
-      _position = GeoPoint.santiagoCenter;
+      _position = GeoPoint.vinaDelMarCenter;
     }
 
     notifyListeners();
