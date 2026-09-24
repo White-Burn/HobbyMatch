@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Hobbymatch</string>
+	<string>HobbyMatch</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -45,9 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>HobbyMatch usa tu ubicación para mostrarte eventos y espacios cerca de ti.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>HobbyMatch usa tu ubicación para mostrarte eventos y espacios cerca de ti.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>HobbyMatch necesita la cámara para escanear el QR de asistencia.</string>
 </dict>
 </plist>

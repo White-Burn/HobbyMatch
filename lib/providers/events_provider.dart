@@ -18,6 +18,7 @@ class EventsProvider extends ChangeNotifier {
   final List<HobbyEvent> _likedEvents = [];
   final List<HobbyEvent> _passedEvents = [];
   final List<HobbyEvent> _userCreatedEvents = [];
+  final Map<String, DateTime> _attendance = {};
   EventCategory? _selectedCategory;
   String _searchRadius = '5 km';
   int _nextEventId = 100;
@@ -48,6 +49,29 @@ class EventsProvider extends ChangeNotifier {
     return event.formattedDistanceFrom(user, venueFor(event));
   }
 
+  // Prototype check-in token. A production version must use a server-issued,
+  // expiring token instead of deriving the token from the event id.
+  String checkInPayload(HobbyEvent event) =>
+      'hobbymatch://check-in?eventId=${Uri.encodeComponent(event.id)}&token=${Uri.encodeComponent(_checkInToken(event))}';
+
+  bool hasCheckedIn(HobbyEvent event) => _attendance.containsKey(event.id);
+
+  DateTime? checkedInAt(HobbyEvent event) => _attendance[event.id];
+
+  bool confirmAttendance({required String eventId, required String token}) {
+    final event = allEvents.cast<HobbyEvent?>().firstWhere(
+          (candidate) => candidate?.id == eventId,
+          orElse: () => null,
+        );
+    if (event == null || token != _checkInToken(event)) return false;
+
+    _attendance.putIfAbsent(eventId, DateTime.now);
+    notifyListeners();
+    return true;
+  }
+
+  String _checkInToken(HobbyEvent event) => 'checkin-${event.id}';
+
   List<HobbyEvent> eventsNearUser(GeoPoint user, {bool includePassed = false}) {
     final radiusKm = parseRadiusKm(_searchRadius);
     final pool = includePassed
@@ -64,7 +88,6 @@ class EventsProvider extends ChangeNotifier {
   }
 
   List<HobbyEvent> get filteredEvents {
-    // Will be filtered with location in UI layer or via method
     var events = List<HobbyEvent>.from(_availableEvents);
 
     if (_selectedCategory != null) {
