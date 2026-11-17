@@ -63,6 +63,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_dateTime),
+      initialEntryMode: TimePickerEntryMode.input,
     );
     if (time == null || !mounted) return;
 
@@ -119,7 +120,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<LocationProvider>().position;
-    final events = context.watch<EventsProvider>();
+    context.watch<EventsProvider>();
     final selectedVenue = _selectedVenueId == null ? null : venueById(_selectedVenueId!);
 
     return Scaffold(

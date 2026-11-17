@@ -80,7 +80,7 @@ class EventsProvider extends ChangeNotifier {
 
     return pool.where((event) {
       final distance = eventDistanceKm(event, user);
-      return distance <= radiusKm;
+      return event.isUserCreated || distance <= radiusKm;
     }).toList()
       ..sort(
         (a, b) => eventDistanceKm(a, user).compareTo(eventDistanceKm(b, user)),
@@ -99,8 +99,10 @@ class EventsProvider extends ChangeNotifier {
 
   List<HobbyEvent> filteredEventsNear(GeoPoint user) {
     final radiusKm = parseRadiusKm(_searchRadius);
-    var events = filteredEvents.where((event) {
-      return eventDistanceKm(event, user) <= radiusKm;
+    final events = filteredEvents.where((event) {
+      // Keep newly created events visible even when their venue is outside
+      // the current search radius (for example, Jardín Botánico).
+      return event.isUserCreated || eventDistanceKm(event, user) <= radiusKm;
     }).toList();
 
     events.sort(

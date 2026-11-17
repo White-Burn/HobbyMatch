@@ -29,15 +29,14 @@ class _SwipeScreenState extends State<SwipeScreen> {
   }
 
   void _showMatchSnackBar(HobbyEvent event) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
             const Icon(Icons.favorite, color: Colors.white, size: 20),
             const SizedBox(width: 10),
-            Expanded(
-              child: Text('¡Te interesa "${event.title}"!'),
-            ),
+            Expanded(child: Text('¡Te interesa "${event.title}"!')),
           ],
         ),
         backgroundColor: AppColors.like,
@@ -84,13 +83,23 @@ class _SwipeScreenState extends State<SwipeScreen> {
                         backCardOffset: const Offset(0, -28),
                         padding: const EdgeInsets.only(bottom: 24),
                         onSwipe: (previousIndex, currentIndex, direction) {
-                          final event = events[previousIndex];
-                          if (direction == CardSwiperDirection.left) {
-                            provider.passEvent(event);
-                          } else if (direction == CardSwiperDirection.right) {
-                            provider.likeEvent(event);
-                            _showMatchSnackBar(event);
+                          if (previousIndex < 0 || previousIndex >= events.length) {
+                            return false;
                           }
+                          final event = events[previousIndex];
+
+                          // Updating the provider synchronously can remove the swiper
+                          // while its animation listener is still resetting its state.
+                          // Defer the deck update until this frame has completed.
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (!mounted) return;
+                            if (direction == CardSwiperDirection.left) {
+                              provider.passEvent(event);
+                            } else if (direction == CardSwiperDirection.right) {
+                              provider.likeEvent(event);
+                              _showMatchSnackBar(event);
+                            }
+                          });
                           return true;
                         },
                         cardBuilder: (context, index, percentThresholdX, percentThresholdY) {
@@ -119,9 +128,7 @@ class _SwipeScreenState extends State<SwipeScreen> {
 
   void _openDetail(BuildContext context, HobbyEvent event) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => EventDetailScreen(event: event),
-      ),
+      MaterialPageRoute(builder: (_) => EventDetailScreen(event: event)),
     );
   }
 }
@@ -140,6 +147,7 @@ class _Header extends StatelessWidget {
   final bool hasGps;
   final VoidCallback onRefreshGps;
   final VoidCallback onCreateEvent;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
