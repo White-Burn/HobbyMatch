@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/hobby_event.dart';
 import '../providers/events_provider.dart';
 import '../theme/app_theme.dart';
-import 'check_in_scanner_screen.dart';
-import 'event_check_in_qr_screen.dart';
+import '../screens/check_in_scanner_screen.dart';
+import '../screens/event_check_in_qr_screen.dart';
 
 class CheckInActions extends StatelessWidget {
   const CheckInActions({super.key, required this.event});
