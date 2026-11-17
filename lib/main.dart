@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
@@ -28,6 +29,15 @@ class HobbyMatchApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
         locale: const Locale('es'),
+        supportedLocales: const [
+          Locale('es'),
+          Locale('en', 'US'),
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: const OnboardingScreen(),
       ),
     );
