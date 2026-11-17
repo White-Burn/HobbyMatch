@@ -64,6 +64,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       context: context,
       initialTime: TimeOfDay.fromDateTime(_dateTime),
       initialEntryMode: TimePickerEntryMode.input,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
     );
     if (time == null || !mounted) return;
 
