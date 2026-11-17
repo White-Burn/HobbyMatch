@@ -47,11 +47,15 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   Future<void> _pickDateTime() async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final selectedDate = DateUtils.dateOnly(_dateTime);
+    final initialDate = selectedDate.isBefore(today) ? today : selectedDate;
+
     final date = await showDatePicker(
       context: context,
-      initialDate: _dateTime.isBefore(DateTime.now()) ? DateTime.now() : _dateTime,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: initialDate,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 365)),
       locale: const Locale('es'),
     );
     if (date == null || !mounted) return;
