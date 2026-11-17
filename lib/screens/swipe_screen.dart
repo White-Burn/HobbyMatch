@@ -52,6 +52,10 @@ class _SwipeScreenState extends State<SwipeScreen> {
     return Consumer2<EventsProvider, LocationProvider>(
       builder: (context, provider, location, _) {
         final events = provider.filteredEventsNear(location.position);
+        // CardSwiper retains its current index internally. Since swiped events
+        // are removed from the provider's list, recreate it for the new deck so
+        // that its index starts within the new card count.
+        final deckKey = ValueKey(events.map((event) => event.id).join('|'));
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -77,6 +81,7 @@ class _SwipeScreenState extends State<SwipeScreen> {
                   : Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: CardSwiper(
+                        key: deckKey,
                         controller: _swiperController,
                         cardsCount: events.length,
                         numberOfCardsDisplayed: events.length.clamp(1, 3),
@@ -88,9 +93,8 @@ class _SwipeScreenState extends State<SwipeScreen> {
                           }
                           final event = events[previousIndex];
 
-                          // Updating the provider synchronously can remove the swiper
-                          // while its animation listener is still resetting its state.
-                          // Defer the deck update until this frame has completed.
+                          // Let CardSwiper finish its current frame before the
+                          // provider changes the deck and this swiper is replaced.
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             if (!mounted) return;
                             if (direction == CardSwiperDirection.left) {
@@ -103,9 +107,14 @@ class _SwipeScreenState extends State<SwipeScreen> {
                           return true;
                         },
                         cardBuilder: (context, index, percentThresholdX, percentThresholdY) {
+                          if (index < 0 || index >= events.length) {
+                            return const SizedBox.shrink();
+                          }
+                          final event = events[index];
                           return EventCard(
-                            event: events[index],
-                            onTap: () => _openDetail(context, events[index]),
+                            key: ValueKey(event.id),
+                            event: event,
+                            onTap: () => _openDetail(context, event),
                           );
                         },
                       ),
