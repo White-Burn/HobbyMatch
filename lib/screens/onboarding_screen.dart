@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/event_category.dart';
 import '../models/user_profile.dart';
@@ -24,6 +26,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Uint8List? _avatarBytes;
   int _currentStep = 0;
   bool _isPickingImage = false;
+  bool _isFinishing = false;
 
   static const _steps = <_StepInfo>[
     _StepInfo(Icons.waving_hand_outlined, '¡Bienvenido a HobbyMatch!', 'Armemos tu perfil para encontrar personas y eventos que conecten con tus hobbies.'),
@@ -42,7 +45,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  void _next({bool skip = false}) {
+  void _next() {
     if (_currentStep < _steps.length - 1) {
       setState(() => _currentStep++);
       _pageController.animateToPage(
@@ -50,20 +53,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeOutCubic,
       );
-      return;
+    } else {
+      _finish();
     }
-    _finish();
   }
 
   Future<void> _pickPhoto() async {
     if (_isPickingImage) return;
     setState(() => _isPickingImage = true);
     try {
-      final image = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-        maxWidth: 1000,
-      );
+      final image = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 75, maxWidth: 800);
       if (image != null) {
         final bytes = await image.readAsBytes();
         if (mounted) setState(() => _avatarBytes = bytes);
@@ -79,19 +78,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _finish() {
+  Future<void> _finish() async {
+    if (_isFinishing) return;
+    setState(() => _isFinishing = true);
     final profile = UserProfile(
       name: _nameController.text.trim().isEmpty ? UserProfile.demo.name : _nameController.text.trim(),
       city: _cityController.text.trim().isEmpty ? UserProfile.demo.city : _cityController.text.trim(),
       bio: _bioController.text.trim().isEmpty ? UserProfile.demo.bio : _bioController.text.trim(),
-      interests: _selectedHobbies.isEmpty
-          ? UserProfile.demo.interests
-          : _selectedHobbies.map((hobby) => hobby.label).toList(),
+      interests: _selectedHobbies.isEmpty ? UserProfile.demo.interests : _selectedHobbies.map((hobby) => hobby.label).toList(),
       avatarBytes: _avatarBytes,
     );
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => MainShell(profile: profile)),
-    );
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString('hobbymatch.profile.v1', jsonEncode(profile.toJson()));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo guardar localmente el perfil; continuará esta sesión.')),
+        );
+      }
+    }
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => MainShell(profile: profile)));
   }
 
   @override
@@ -111,11 +119,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     IconButton(
                       onPressed: () {
                         setState(() => _currentStep--);
-                        _pageController.animateToPage(
-                          _currentStep,
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeOut,
-                        );
+                        _pageController.animateToPage(_currentStep, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
                       },
                       icon: const Icon(Icons.arrow_back),
                     )
@@ -137,10 +141,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: _finish,
-                  child: const Text('Omitir personalización'),
-                ),
+                child: TextButton(onPressed: _isFinishing ? null : _finish, child: const Text('Omitir personalización')),
               ),
               Expanded(
                 child: PageView.builder(
@@ -157,12 +158,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: isLastStep ? _finish : () => _next(),
+                  onPressed: _isFinishing ? null : _currentStep == 0 ? _next : isLastStep ? _finish : _next,
                   child: Text(_currentStep == 0 ? 'Personalizar mi perfil' : isLastStep ? 'Terminar' : 'Continuar'),
                 ),
               ),
               TextButton(
-                onPressed: () => _next(skip: true),
+                onPressed: _isFinishing ? null : _next,
                 child: Text(isLastStep ? 'Omitir y terminar' : 'Omitir este paso'),
               ),
             ],
@@ -235,9 +236,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const SizedBox(height: 20),
               OutlinedButton.icon(
                 onPressed: _isPickingImage ? null : _pickPhoto,
-                icon: _isPickingImage
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.photo_library_outlined),
+                icon: _isPickingImage ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.photo_library_outlined),
                 label: Text(_isPickingImage ? 'Abriendo galería...' : _avatarBytes == null ? 'Elegir de la galería' : 'Cambiar foto'),
               ),
             ],

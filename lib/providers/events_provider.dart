@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/mock_events.dart';
 import '../data/predefined_venues.dart';
@@ -14,6 +18,8 @@ class EventsProvider extends ChangeNotifier {
     _availableEvents = List.from(mockEvents);
   }
 
+  static const _storageKey = 'hobbymatch.user_created_events.v1';
+
   late List<HobbyEvent> _availableEvents;
   final List<HobbyEvent> _likedEvents = [];
   final List<HobbyEvent> _passedEvents = [];
@@ -23,13 +29,41 @@ class EventsProvider extends ChangeNotifier {
   String _searchRadius = '5 km';
   int _nextEventId = 100;
 
-  List<HobbyEvent> get availableEvents => _availableEvents;
+  List<HobbyEvent> get availableEvents => List.unmodifiable(_availableEvents);
   List<HobbyEvent> get likedEvents => List.unmodifiable(_likedEvents);
   List<HobbyEvent> get passedEvents => List.unmodifiable(_passedEvents);
   List<HobbyEvent> get userCreatedEvents => List.unmodifiable(_userCreatedEvents);
   EventCategory? get selectedCategory => _selectedCategory;
   String get searchRadius => _searchRadius;
   List<EventVenue> get venues => predefinedVenues;
+
+  Future<void> loadLocalEvents() async {
+    final preferences = await SharedPreferences.getInstance();
+    final encoded = preferences.getString(_storageKey);
+    if (encoded == null) return;
+
+    try {
+      final decoded = jsonDecode(encoded) as List<dynamic>;
+      _userCreatedEvents
+        ..clear()
+        ..addAll(decoded.whereType<Map<String, dynamic>>().map(HobbyEvent.fromJson));
+      _availableEvents = [..._userCreatedEvents, ...mockEvents];
+      _nextEventId = _userCreatedEvents.length + 100;
+      notifyListeners();
+    } on FormatException {
+      await preferences.remove(_storageKey);
+    } on TypeError {
+      await preferences.remove(_storageKey);
+    }
+  }
+
+  Future<void> _saveLocalEvents() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(
+      _storageKey,
+      jsonEncode(_userCreatedEvents.map((event) => event.toJson()).toList()),
+    );
+  }
 
   List<HobbyEvent> get allEvents => [..._availableEvents, ..._likedEvents, ..._userCreatedEvents];
 
@@ -130,6 +164,7 @@ class EventsProvider extends ChangeNotifier {
     );
     _userCreatedEvents.insert(0, event);
     _availableEvents.insert(0, event);
+    unawaited(_saveLocalEvents());
     notifyListeners();
     return event;
   }

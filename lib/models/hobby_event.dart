@@ -37,6 +37,43 @@ class HobbyEvent {
 
   bool get isAlmostFull => spotsLeft <= 3;
 
+  Map<String, Object?> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'category': category.name,
+        'dateTime': dateTime.toIso8601String(),
+        'venueId': venueId,
+        'maxParticipants': maxParticipants,
+        'currentParticipants': currentParticipants,
+        'organizerName': organizerName,
+        'tags': tags,
+        'imageUrl': imageUrl,
+        'isUserCreated': isUserCreated,
+      };
+
+  factory HobbyEvent.fromJson(Map<String, dynamic> json) {
+    final categoryName = json['category'] as String?;
+    final category = EventCategory.values.firstWhere(
+      (value) => value.name == categoryName,
+      orElse: () => EventCategory.meetup,
+    );
+    return HobbyEvent(
+      id: json['id'] as String,
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      category: category,
+      dateTime: DateTime.parse(json['dateTime'] as String),
+      venueId: json['venueId'] as String? ?? '',
+      maxParticipants: (json['maxParticipants'] as num?)?.toInt() ?? 2,
+      currentParticipants: (json['currentParticipants'] as num?)?.toInt() ?? 1,
+      organizerName: json['organizerName'] as String? ?? '',
+      tags: (json['tags'] as List<dynamic>?)?.whereType<String>().toList() ?? const [],
+      imageUrl: json['imageUrl'] as String?,
+      isUserCreated: json['isUserCreated'] as bool? ?? true,
+    );
+  }
+
   double distanceKmFrom(GeoPoint user, EventVenue venue) {
     return Geolocator.distanceBetween(
           user.latitude,
