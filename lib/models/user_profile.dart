@@ -1,9 +1,12 @@
+import 'dart:typed_data';
+
 class UserProfile {
   const UserProfile({
     required this.name,
     required this.city,
     required this.bio,
     required this.interests,
+    this.avatarBytes,
     this.avatarUrl,
   });
 
@@ -11,6 +14,7 @@ class UserProfile {
   final String city;
   final String bio;
   final List<String> interests;
+  final Uint8List? avatarBytes;
   final String? avatarUrl;
 
   static const demo = UserProfile(
