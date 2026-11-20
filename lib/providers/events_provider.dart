@@ -47,7 +47,8 @@ class EventsProvider extends ChangeNotifier {
       _userCreatedEvents
         ..clear()
         ..addAll(decoded.whereType<Map<String, dynamic>>().map(HobbyEvent.fromJson));
-      _availableEvents = [..._userCreatedEvents, ...mockEvents];
+      // Created events belong in “Mis eventos”, not in the recommendation deck.
+      _availableEvents = [...mockEvents];
       _nextEventId = _userCreatedEvents.length + 100;
       notifyListeners();
     } on FormatException {
@@ -65,7 +66,11 @@ class EventsProvider extends ChangeNotifier {
     );
   }
 
-  List<HobbyEvent> get allEvents => [..._availableEvents, ..._likedEvents, ..._userCreatedEvents];
+  List<HobbyEvent> get allEvents => [
+        ..._availableEvents,
+        ..._likedEvents,
+        ..._userCreatedEvents,
+      ];
 
   EventVenue venueFor(HobbyEvent event) => venueById(event.venueId) ?? predefinedVenues.first;
 
@@ -95,20 +100,23 @@ class EventsProvider extends ChangeNotifier {
 
   List<HobbyEvent> eventsNearUser(GeoPoint user, {bool includePassed = false}) {
     final radiusKm = parseRadiusKm(_searchRadius);
-    final pool = includePassed ? [..._availableEvents, ..._likedEvents, ..._userCreatedEvents] : [..._availableEvents, ..._userCreatedEvents];
-    return pool.where((event) => event.isUserCreated || eventDistanceKm(event, user) <= radiusKm).toList()
+    final pool = <HobbyEvent>[..._availableEvents, ..._likedEvents];
+    if (includePassed) pool.addAll(_passedEvents);
+    return pool.where((event) => eventDistanceKm(event, user) <= radiusKm).toList()
       ..sort((a, b) => eventDistanceKm(a, user).compareTo(eventDistanceKm(b, user)));
   }
 
   List<HobbyEvent> get filteredEvents {
     var events = List<HobbyEvent>.from(_availableEvents);
-    if (_selectedCategory != null) events = events.where((event) => event.category == _selectedCategory).toList();
+    if (_selectedCategory != null) {
+      events = events.where((event) => event.category == _selectedCategory).toList();
+    }
     return events;
   }
 
   List<HobbyEvent> filteredEventsNear(GeoPoint user) {
     final radiusKm = parseRadiusKm(_searchRadius);
-    final events = filteredEvents.where((event) => event.isUserCreated || eventDistanceKm(event, user) <= radiusKm).toList();
+    final events = filteredEvents.where((event) => eventDistanceKm(event, user) <= radiusKm).toList();
     events.sort((a, b) => eventDistanceKm(a, user).compareTo(eventDistanceKm(b, user)));
     return events;
   }
@@ -157,20 +165,22 @@ class EventsProvider extends ChangeNotifier {
       dateTime: dateTime,
       venueId: venueId,
       maxParticipants: maxParticipants,
+      // The organizer is attending, so their seat is included in the capacity.
       currentParticipants: 1,
       organizerName: UserProfile.demo.name,
       tags: tags,
       isUserCreated: true,
     );
     _userCreatedEvents.insert(0, event);
-    _availableEvents.insert(0, event);
+    // Deliberately do not add this event to _availableEvents: it is not a
+    // recommendation to its creator and is shown in the “Mis eventos” tab.
     unawaited(_saveLocalEvents());
     notifyListeners();
     return event;
   }
 
   void resetDeck() {
-    _availableEvents = [..._userCreatedEvents, ...mockEvents];
+    _availableEvents = [...mockEvents];
     _likedEvents.clear();
     _passedEvents.clear();
     notifyListeners();

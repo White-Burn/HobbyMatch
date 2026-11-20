@@ -26,7 +26,8 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    final likedCount = context.watch<EventsProvider>().likedEvents.length;
+    final eventsProvider = context.watch<EventsProvider>();
+    final myEventCount = eventsProvider.likedEvents.length + eventsProvider.userCreatedEvents.length;
     final friendCount = context.watch<FriendsProvider>().friends.length;
     final screens = [
       const SwipeScreen(),
@@ -45,8 +46,8 @@ class _MainShellState extends State<MainShell> {
           const NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore), label: 'Explorar'),
           const NavigationDestination(icon: Icon(Icons.map_outlined), selectedIcon: Icon(Icons.map), label: 'Mapa'),
           NavigationDestination(
-            icon: Badge(isLabelVisible: likedCount > 0, label: Text('$likedCount'), child: const Icon(Icons.favorite_outline)),
-            selectedIcon: Badge(isLabelVisible: likedCount > 0, label: Text('$likedCount'), child: const Icon(Icons.favorite)),
+            icon: Badge(isLabelVisible: myEventCount > 0, label: Text('$myEventCount'), child: const Icon(Icons.event_outlined)),
+            selectedIcon: Badge(isLabelVisible: myEventCount > 0, label: Text('$myEventCount'), child: const Icon(Icons.event)),
             label: 'Mis eventos',
           ),
           NavigationDestination(
