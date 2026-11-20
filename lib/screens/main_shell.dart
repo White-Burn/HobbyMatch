@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../models/user_profile.dart';
 import '../providers/events_provider.dart';
+import '../providers/friends_provider.dart';
 import '../providers/location_provider.dart';
 import '../theme/app_theme.dart';
 import 'favorites_screen.dart';
+import 'friends_screen.dart';
 import 'map_screen.dart';
 import 'profile_screen.dart';
 import 'swipe_screen.dart';
@@ -25,10 +27,12 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final likedCount = context.watch<EventsProvider>().likedEvents.length;
+    final friendCount = context.watch<FriendsProvider>().friends.length;
     final screens = [
       const SwipeScreen(),
       const MapScreen(),
       const FavoritesScreen(),
+      const FriendsScreen(),
       ProfileScreen(profile: widget.profile),
     ];
 
@@ -44,6 +48,11 @@ class _MainShellState extends State<MainShell> {
             icon: Badge(isLabelVisible: likedCount > 0, label: Text('$likedCount'), child: const Icon(Icons.favorite_outline)),
             selectedIcon: Badge(isLabelVisible: likedCount > 0, label: Text('$likedCount'), child: const Icon(Icons.favorite)),
             label: 'Mis eventos',
+          ),
+          NavigationDestination(
+            icon: Badge(isLabelVisible: friendCount > 0, label: Text('$friendCount'), child: const Icon(Icons.people_outline)),
+            selectedIcon: Badge(isLabelVisible: friendCount > 0, label: Text('$friendCount'), child: const Icon(Icons.people)),
+            label: 'Amigos',
           ),
           const NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Perfil'),
         ],

@@ -31,26 +31,14 @@ class EventsProvider extends ChangeNotifier {
   String get searchRadius => _searchRadius;
   List<EventVenue> get venues => predefinedVenues;
 
-  List<HobbyEvent> get allEvents => [
-        ..._availableEvents,
-        ..._likedEvents,
-        ..._userCreatedEvents,
-      ];
+  List<HobbyEvent> get allEvents => [..._availableEvents, ..._likedEvents, ..._userCreatedEvents];
 
-  EventVenue venueFor(HobbyEvent event) {
-    return venueById(event.venueId) ?? predefinedVenues.first;
-  }
+  EventVenue venueFor(HobbyEvent event) => venueById(event.venueId) ?? predefinedVenues.first;
 
-  double eventDistanceKm(HobbyEvent event, GeoPoint user) {
-    return event.distanceKmFrom(user, venueFor(event));
-  }
+  double eventDistanceKm(HobbyEvent event, GeoPoint user) => event.distanceKmFrom(user, venueFor(event));
 
-  String eventDistanceLabel(HobbyEvent event, GeoPoint user) {
-    return event.formattedDistanceFrom(user, venueFor(event));
-  }
+  String eventDistanceLabel(HobbyEvent event, GeoPoint user) => event.formattedDistanceFrom(user, venueFor(event));
 
-  // Prototype check-in token. A production version must use a server-issued,
-  // expiring token instead of deriving the token from the event id.
   String checkInPayload(HobbyEvent event) =>
       'hobbymatch://check-in?eventId=${Uri.encodeComponent(event.id)}&token=${Uri.encodeComponent(_checkInToken(event))}';
 
@@ -60,11 +48,10 @@ class EventsProvider extends ChangeNotifier {
 
   bool confirmAttendance({required String eventId, required String token}) {
     final event = allEvents.cast<HobbyEvent?>().firstWhere(
-          (candidate) => candidate?.id == eventId,
-          orElse: () => null,
-        );
+      (candidate) => candidate?.id == eventId,
+      orElse: () => null,
+    );
     if (event == null || token != _checkInToken(event)) return false;
-
     _attendance.putIfAbsent(eventId, DateTime.now);
     notifyListeners();
     return true;
@@ -74,41 +61,21 @@ class EventsProvider extends ChangeNotifier {
 
   List<HobbyEvent> eventsNearUser(GeoPoint user, {bool includePassed = false}) {
     final radiusKm = parseRadiusKm(_searchRadius);
-    final pool = includePassed
-        ? [..._availableEvents, ..._likedEvents, ..._userCreatedEvents]
-        : [..._availableEvents, ..._userCreatedEvents];
-
-    return pool.where((event) {
-      final distance = eventDistanceKm(event, user);
-      return event.isUserCreated || distance <= radiusKm;
-    }).toList()
-      ..sort(
-        (a, b) => eventDistanceKm(a, user).compareTo(eventDistanceKm(b, user)),
-      );
+    final pool = includePassed ? [..._availableEvents, ..._likedEvents, ..._userCreatedEvents] : [..._availableEvents, ..._userCreatedEvents];
+    return pool.where((event) => event.isUserCreated || eventDistanceKm(event, user) <= radiusKm).toList()
+      ..sort((a, b) => eventDistanceKm(a, user).compareTo(eventDistanceKm(b, user)));
   }
 
   List<HobbyEvent> get filteredEvents {
     var events = List<HobbyEvent>.from(_availableEvents);
-
-    if (_selectedCategory != null) {
-      events = events.where((e) => e.category == _selectedCategory).toList();
-    }
-
+    if (_selectedCategory != null) events = events.where((event) => event.category == _selectedCategory).toList();
     return events;
   }
 
   List<HobbyEvent> filteredEventsNear(GeoPoint user) {
     final radiusKm = parseRadiusKm(_searchRadius);
-    final events = filteredEvents.where((event) {
-      // Keep newly created events visible even when their venue is outside
-      // the current search radius (for example, Jardín Botánico).
-      return event.isUserCreated || eventDistanceKm(event, user) <= radiusKm;
-    }).toList();
-
-    events.sort(
-      (a, b) => eventDistanceKm(a, user).compareTo(eventDistanceKm(b, user)),
-    );
-
+    final events = filteredEvents.where((event) => event.isUserCreated || eventDistanceKm(event, user) <= radiusKm).toList();
+    events.sort((a, b) => eventDistanceKm(a, user).compareTo(eventDistanceKm(b, user)));
     return events;
   }
 
@@ -124,17 +91,13 @@ class EventsProvider extends ChangeNotifier {
 
   void likeEvent(HobbyEvent event) {
     _availableEvents.removeWhere((e) => e.id == event.id);
-    if (!_likedEvents.any((e) => e.id == event.id)) {
-      _likedEvents.insert(0, event);
-    }
+    if (!_likedEvents.any((e) => e.id == event.id)) _likedEvents.insert(0, event);
     notifyListeners();
   }
 
   void passEvent(HobbyEvent event) {
     _availableEvents.removeWhere((e) => e.id == event.id);
-    if (!_passedEvents.any((e) => e.id == event.id)) {
-      _passedEvents.add(event);
-    }
+    if (!_passedEvents.any((e) => e.id == event.id)) _passedEvents.add(event);
     notifyListeners();
   }
 
@@ -165,7 +128,6 @@ class EventsProvider extends ChangeNotifier {
       tags: tags,
       isUserCreated: true,
     );
-
     _userCreatedEvents.insert(0, event);
     _availableEvents.insert(0, event);
     notifyListeners();
@@ -173,10 +135,7 @@ class EventsProvider extends ChangeNotifier {
   }
 
   void resetDeck() {
-    _availableEvents = [
-      ..._userCreatedEvents,
-      ...mockEvents,
-    ];
+    _availableEvents = [..._userCreatedEvents, ...mockEvents];
     _likedEvents.clear();
     _passedEvents.clear();
     notifyListeners();

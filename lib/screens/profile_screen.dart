@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../models/hobby_event.dart';
 import '../models/user_profile.dart';
 import '../providers/events_provider.dart';
 import '../providers/location_provider.dart';
 import '../theme/app_theme.dart';
+import 'event_detail_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, this.profile = UserProfile.demo});
@@ -15,6 +18,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer2<EventsProvider, LocationProvider>(
       builder: (context, provider, location, _) {
+        final createdEvents = provider.userCreatedEvents;
         return CustomScrollView(
           slivers: [
             const SliverAppBar(floating: true, title: Text('Mi perfil')),
@@ -63,6 +67,24 @@ class ProfileScreen extends StatelessWidget {
                           side: BorderSide.none,
                         )).toList(),
                       ),
+                    const SizedBox(height: 28),
+                    Row(
+                      children: [
+                        const Expanded(child: _SectionTitle(title: 'Tus eventos creados')),
+                        Text('${createdEvents.length}', style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    if (createdEvents.isEmpty)
+                      const _EmptyCreatedEvents()
+                    else
+                      ...createdEvents.map((event) => _CreatedEventTile(
+                            event: event,
+                            venueName: provider.venueFor(event).name,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => EventDetailScreen(event: event)),
+                            ),
+                          )),
                     const SizedBox(height: 32),
                     const _SectionTitle(title: 'Configuración'),
                     const SizedBox(height: 8),
@@ -116,6 +138,41 @@ class ProfileScreen extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           FilledButton(onPressed: () { provider.resetDeck(); Navigator.pop(ctx); }, child: const Text('Reiniciar')),
         ],
+      ),
+    );
+  }
+}
+
+class _EmptyCreatedEvents extends StatelessWidget {
+  const _EmptyCreatedEvents();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16)),
+    child: const Text('Todavía no has creado eventos. Los que publiques aparecerán aquí.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
+  );
+}
+
+class _CreatedEventTile extends StatelessWidget {
+  const _CreatedEventTile({required this.event, required this.venueName, required this.onTap});
+  final HobbyEvent event;
+  final String venueName;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final date = DateFormat('d MMM · HH:mm', 'es').format(event.dateTime);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        onTap: onTap,
+        leading: CircleAvatar(backgroundColor: event.category.color.withOpacity(0.12), child: Icon(event.category.icon, color: event.category.color)),
+        title: Text(event.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text('$date · $venueName\nCreado por ti · ${event.currentParticipants}/${event.maxParticipants} participantes'),
+        isThreeLine: true,
+        trailing: const Icon(Icons.chevron_right),
       ),
     );
   }
